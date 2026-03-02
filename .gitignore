@@ -3,3 +3,6 @@ build/
 sdkconfig
 .pio/
 .vscode/
+*~
+*.swp
+*.bak
