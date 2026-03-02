@@ -1,0 +1,11 @@
+#ifndef VALVE_ENGINE_H
+#define VALVE_ENGINE_H
+
+#include <Arduino.h>
+
+void valve_engine_init();
+void valve_engine_task();
+void valve_set(uint8_t channel_id, bool state);
+void valve_set_timed(uint8_t channel_id, unsigned long duration_ms);
+
+#endif

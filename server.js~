@@ -1,0 +1,72 @@
+const express = require("express");
+const http = require("http");
+const mqtt = require("mqtt");
+const { Server } = require("socket.io");
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+const DEVICE_ID = "D001";
+
+const mqttClient = mqtt.connect("mqtt://localhost:1883", {
+    clientId: "server-dashboard",
+    clean: false,
+    reconnectPeriod: 2000
+});
+
+/* ================= MQTT CONNECT ================= */
+
+mqttClient.on("connect", () => {
+    console.log("Connected to MQTT Broker");
+
+    // Subscribe with QoS 1
+    mqttClient.subscribe(`device/${DEVICE_ID}/status`, { qos: 1 });
+});
+
+/* ================= MQTT MESSAGE ================= */
+
+mqttClient.on("message", (topic, message) => {
+    const msg = message.toString();
+    console.log("MQTT Message:", msg);
+
+    io.emit("statusUpdate", msg);
+});
+
+/* ================= EXPRESS ================= */
+
+app.use(express.static("public"));
+
+/* ================= SOCKET ================= */
+
+io.on("connection", (socket) => {
+    console.log("Web client connected");
+
+    socket.on("valveCommand", (data) => {
+
+        console.log("Command from Web:", data);
+
+        // Build structured command
+        const command = {
+            device_id: DEVICE_ID,
+            valve_id: data.valve,
+            action: data.action,
+            duration: data.duration || 5,  // default 5 sec
+            request_id: Date.now().toString()
+        };
+
+        console.log("Publishing:", command);
+
+        mqttClient.publish(
+            `device/${DEVICE_ID}/command`,
+            JSON.stringify(command),
+            { qos: 1 }
+        );
+    });
+});
+
+/* ================= START SERVER ================= */
+
+server.listen(3000, () => {
+    console.log("Server running on http://localhost:3000");
+});

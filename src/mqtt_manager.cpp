@@ -1,0 +1,46 @@
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include "mqtt_manager.h"
+#include "comm_layer.h"
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+const char* mqtt_server = "192.168.1.100";  // YOUR PC IP
+const int mqtt_port = 1883;
+
+void callback(char* topic, byte* payload, unsigned int length) {
+
+    payload[length] = '\0';
+    comm_handle_message(topic, (char*)payload);
+}
+
+void mqtt_init() {
+    client.setServer(mqtt_server, mqtt_port);
+    client.setCallback(callback);
+}
+
+void mqtt_reconnect() {
+
+    while (!client.connected()) {
+
+        if (client.connect("ESP32_Client")) {
+            client.subscribe("device/commands");
+        } else {
+            delay(2000);
+        }
+    }
+}
+
+void mqtt_task() {
+
+    if (!client.connected()) {
+        mqtt_reconnect();
+    }
+
+    client.loop();
+}
+
+void mqtt_publish(const char* topic, const char* payload) {
+    client.publish(topic, payload);
+}

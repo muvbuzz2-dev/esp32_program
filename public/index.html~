@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Irrigation Dashboard</title>
+    <style>
+        body { font-family: Arial; }
+        .valve { margin-bottom: 20px; }
+        .running { color: green; }
+        .stopped { color: red; }
+        .offline { color: gray; }
+    </style>
+</head>
+<body>
+
+<h1>Smart Irrigation Control</h1>
+
+<h3>Device Status: <span id="deviceStatus">Unknown</span></h3>
+
+<div class="valve">
+    <h3>Valve 1</h3>
+    Duration (seconds):
+    <input type="number" id="duration1" value="5">
+    <button onclick="sendCommand(1, 'ON')">ON</button>
+    <button onclick="sendCommand(1, 'OFF')">OFF</button>
+    <p>Status: <span id="valve1Status">IDLE</span></p>
+</div>
+
+<div class="valve">
+    <h3>Valve 2</h3>
+    Duration (seconds):
+    <input type="number" id="duration2" value="5">
+    <button onclick="sendCommand(2, 'ON')">ON</button>
+    <button onclick="sendCommand(2, 'OFF')">OFF</button>
+    <p>Status: <span id="valve2Status">IDLE</span></p>
+</div>
+
+<h2>Raw Logs:</h2>
+<div id="logs"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+const socket = io();
+
+function sendCommand(valve, action) {
+
+    const duration = document.getElementById("duration" + valve).value;
+
+    socket.emit("valveCommand", {
+        valve: valve,
+        action: action,
+        duration: parseInt(duration)
+    });
+}
+
+/* ================= STATUS HANDLING ================= */
+
+socket.on("statusUpdate", function(msg) {
+
+    const logs = document.getElementById("logs");
+    logs.innerHTML += "<p>" + msg + "</p>";
+
+    try {
+        const data = JSON.parse(msg);
+
+        if (data.state === "ONLINE") {
+            document.getElementById("deviceStatus").innerText = "ONLINE";
+            document.getElementById("deviceStatus").className = "running";
+        }
+
+        if (data.state === "OFFLINE") {
+            document.getElementById("deviceStatus").innerText = "OFFLINE";
+            document.getElementById("deviceStatus").className = "offline";
+        }
+
+        if (data.valve_id) {
+            const element = document.getElementById("valve" + data.valve_id + "Status");
+            element.innerText = data.state;
+
+            if (data.state === "RUNNING") element.className = "running";
+            else element.className = "stopped";
+        }
+
+    } catch (e) {
+        console.log("Non-JSON status:", msg);
+    }
+});
+
+</script>
+
+</body>
+</html>

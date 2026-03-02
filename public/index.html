@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ESP32 Control Panel</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body { font-family: Arial; text-align: center; margin-top: 40px; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; }
+        #sensor { font-size: 24px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h2>ESP32 Valve Control</h2>
+
+    <button onclick="sendCommand('CH1_ON')">Channel 1 ON</button>
+    <button onclick="sendCommand('CH1_OFF')">Channel 1 OFF</button>
+
+    <button onclick="sendCommand('CH2_ON')">Channel 2 ON</button>
+    <button onclick="sendCommand('CH2_OFF')">Channel 2 OFF</button>
+
+    <div id="sensor">
+        Sensor Value: <span id="sensorValue">---</span>
+    </div>
+
+<script>
+    const socket = io();
+
+    function sendCommand(command) {
+        socket.emit("valveCommand", command);
+    }
+
+    socket.on("sensorData", (data) => {
+        document.getElementById("sensorValue").innerText = data;
+    });
+</script>
+
+</body>
+</html>
